@@ -1,4 +1,4 @@
-# AvicBotChat (flat repo)
+# AvicBotChat
 
 Two bots, one launcher:
 
