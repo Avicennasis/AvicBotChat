@@ -3,7 +3,7 @@
 Two bots, one launcher:
 
 - **Twitch bot** (Twitch IRC / tmi): `twitch.py`
-- **Wikimedia bot** (regular IRC, async): `avicbotirc.py`
+- **Wikimedia bot** (regular IRC, async): `avicbotwikimedia.py`
 
 ## Setup
 
@@ -54,7 +54,7 @@ All settings are environment variables (so `.env` works great):
 
 - `avicbot.py` launcher
 - `twitch.py` Twitch bot
-- `avicbotirc.py` IRC bot
+- `avicbotwikimedia.py` IRC bot
 - `.env.example` template
 - `README.md`
 - `LICENSE`

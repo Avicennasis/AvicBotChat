@@ -74,7 +74,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "--wikimedia",
         dest="wikimedia",
         action="store_true",
-        help="Run the async IRC bot (avicbotirc.py).",
+        help="Run the async IRC bot (avicbotwikimedia.py).",
     )
     p.add_argument("--version", action="version", version="AvicBotChat 2026.02")
     return p
@@ -133,7 +133,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.twitch:
             procs.append(_spawn(ROOT / "twitch.py"))
         if args.wikimedia:
-            procs.append(_spawn(ROOT / "avicbotirc.py"))
+            procs.append(_spawn(ROOT / "avicbotwikimedia.py"))
 
         # Wait for all children. If any exits non-zero, bubble it up.
         exit_code = 0

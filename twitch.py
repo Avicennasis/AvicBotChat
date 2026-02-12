@@ -27,8 +27,8 @@ chat messages automatically.
 
 import logging          # For structured logging instead of print statements
 import os               # For reading environment variables (.env)
-import random           # For random number generation (reserved for future use)
 import re               # For regular expression pattern matching
+from typing import Optional
 import socket           # For IRC socket connection
 import sys              # For system exit codes
 import time             # For delays between messages
@@ -72,13 +72,6 @@ PASS: str = os.getenv("TWITCH_OAUTH_TOKEN", "").strip()
 if PASS and not PASS.startswith("oauth:"):
     PASS = f"oauth:{PASS}"
 
-
-
-# =============================================================================
-# TYPE HINTS
-# =============================================================================
-
-from typing import Optional
 
 
 # =============================================================================
@@ -320,6 +313,10 @@ class TwitchBot:
         
         while self.running:
             try:
+                if self.socket is None:
+                    logger.error("Socket is None, connection lost")
+                    break
+
                 # Receive data from IRC server
                 raw_data = self.socket.recv(BUFFER_SIZE)
                 

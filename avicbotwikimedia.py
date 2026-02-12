@@ -500,7 +500,17 @@ class IRCBot:
         # Set up the conversational replies with dynamic master name
         self.replies = CONVERSATIONAL_REPLIES.copy()
         self.replies["master"] = f"{self.config.master} is my master"
-    
+
+        # Compile regex patterns for matching bot mentions
+        # Pattern 1: "word AvicBot" - keyword before bot name
+        # Pattern 2: "AvicBot word" - keyword after bot name
+        self._pattern_before = re.compile(
+            rf"(\w+)\W*{self.config.nick}\W*$", re.IGNORECASE
+        )
+        self._pattern_after = re.compile(
+            rf"{self.config.nick}\W*(\w+)\W*$", re.IGNORECASE
+        )
+
     async def connect(self) -> None:
         """
         Establish a connection to the IRC server.
@@ -622,10 +632,7 @@ class IRCBot:
         
         # Check for conversational triggers when bot nick is mentioned
         # Patterns: "word AvicBot" or "AvicBot word"
-        pattern1 = re.compile(rf"(\w+)\W*{self.config.nick}\W*$", re.IGNORECASE)
-        pattern2 = re.compile(rf"{self.config.nick}\W*(\w+)\W*$", re.IGNORECASE)
-        
-        match = pattern1.search(message) or pattern2.search(message)
+        match = self._pattern_before.search(message) or self._pattern_after.search(message)
         if match:
             word = match.group(1).lower()
             if word in self.replies:
