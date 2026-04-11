@@ -90,7 +90,7 @@ logger = logging.getLogger("AvicBot")
 class BotConfig:
     """
     Bot configuration data class.
-    
+
     All settings can be overridden via environment variables:
         - AVICBOT_NICK: Bot's IRC nickname
         - AVICBOT_SERVER: IRC server hostname
@@ -101,7 +101,7 @@ class BotConfig:
         - AVICBOT_REALNAME: IRC "real name" field
         - AVICBOT_PASSWORD: NickServ password (optional)
         - AVICBOT_BUFFER_SIZE: Socket buffer size in bytes
-    
+
     Attributes:
         nick: The bot's IRC nickname displayed to other users
         server: IRC server hostname to connect to
@@ -201,7 +201,7 @@ LANGUAGE_CODES: dict[str, str] = {
     "gd": "Scottish Gaelic",
     "fo": "Faroese",
     "kl": "Greenlandic",
-    
+
     # Regional and minority languages
     "war": "Waray-Waray",
     "ceb": "Cebuano",
@@ -459,11 +459,11 @@ CONVERSATIONAL_REPLIES: dict[str, str] = {
 class IRCBot:
     """
     Asynchronous IRC Bot implementation.
-    
+
     This class encapsulates all IRC bot functionality including connection management,
     message parsing, and command handling. It uses Python's asyncio for non-blocking
     network operations, allowing the bot to handle multiple messages efficiently.
-    
+
     Features:
         - Automatic reconnection on connection loss
         - NickServ authentication support
@@ -471,12 +471,12 @@ class IRCBot:
         - Conversational reply triggers
         - Language code lookups
         - Wikimedia tool integration
-    
+
     Example:
         >>> config = BotConfig()
         >>> bot = IRCBot(config)
         >>> asyncio.run(bot.run())
-    
+
     Attributes:
         config: BotConfig instance containing bot settings
         reader: asyncio StreamReader for receiving data
@@ -484,11 +484,11 @@ class IRCBot:
         running: Boolean flag indicating if bot is running
         replies: Dictionary of conversational trigger words and responses
     """
-    
+
     def __init__(self, config: BotConfig) -> None:
         """
         Initialize the IRC bot with the given configuration.
-        
+
         Args:
             config: BotConfig instance containing all bot settings
         """
@@ -496,7 +496,7 @@ class IRCBot:
         self.reader: Optional[asyncio.StreamReader] = None
         self.writer: Optional[asyncio.StreamWriter] = None
         self.running: bool = False
-        
+
         # Set up the conversational replies with dynamic master name
         self.replies = CONVERSATIONAL_REPLIES.copy()
         self.replies["master"] = f"{self.config.master} is my master"
@@ -514,47 +514,47 @@ class IRCBot:
     async def connect(self) -> None:
         """
         Establish a connection to the IRC server.
-        
+
         This method opens an async TCP connection to the configured IRC server
         and port. Upon successful connection, it sends the required IRC
         registration commands (USER and NICK) to identify the bot.
-        
+
         Raises:
             ConnectionError: If unable to connect to the server
             asyncio.TimeoutError: If connection times out
         """
         logger.info(f"Connecting to {self.config.server}:{self.config.port}...")
-        
+
         # Open async TCP connection to the IRC server
         self.reader, self.writer = await asyncio.open_connection(
             self.config.server,
             self.config.port
         )
-        
+
         logger.info("Connection established, sending registration...")
-        
+
         # Send USER command: USER <username> <mode> <unused> :<realname>
         # Mode 2 indicates we want to receive wallops and be invisible
         await self.send_raw(f"USER {self.config.username} 2 3 {self.config.realname}")
-        
+
         # Send NICK command to set our nickname
         await self.send_raw(f"NICK {self.config.nick}")
-        
+
         # Authenticate with NickServ if password is configured
         if self.config.password:
             logger.info("Authenticating with NickServ...")
             await self.send_raw(f"PRIVMSG NickServ :identify {self.config.password}")
-    
+
     async def send_raw(self, message: str) -> None:
         """
         Send a raw IRC protocol message to the server.
-        
+
         IRC protocol requires messages to end with CRLF (\\r\\n).
         This method handles the encoding and line termination automatically.
-        
+
         Args:
             message: The raw IRC protocol message to send (without CRLF)
-        
+
         Note:
             This is a low-level method. For sending channel messages,
             use send_message() instead.
@@ -562,60 +562,60 @@ class IRCBot:
         if self.writer is None:
             logger.error("Cannot send message: not connected")
             return
-        
+
         # Encode the message and append IRC protocol line terminator
         self.writer.write(f"{message}\r\n".encode("utf-8"))
         await self.writer.drain()  # Ensure data is sent
         logger.debug(f">>> {message}")
-    
+
     async def send_message(self, target: str, message: str) -> None:
         """
         Send a PRIVMSG to a channel or user.
-        
+
         PRIVMSG is the IRC command used for both channel messages and
         private messages. The target determines the recipient.
-        
+
         Args:
             target: Channel name (e.g., "#channel") or nickname for PM
             message: The message text to send
         """
         await self.send_raw(f"PRIVMSG {target} :{message}")
-    
+
     async def join_channel(self, channel: str) -> None:
         """
         Join an IRC channel.
-        
+
         Sends the JOIN command to enter the specified channel.
         The channel name should include the # prefix.
-        
+
         Args:
             channel: Channel name to join (e.g., "#mychannel")
         """
         await self.send_raw(f"JOIN {channel}")
         logger.info(f"Joined channel: {channel}")
-    
+
     async def handle_ping(self, payload: str) -> None:
         """
         Respond to server PING with PONG to maintain connection.
-        
+
         IRC servers periodically send PING messages to verify the client
         is still connected. Failing to respond with PONG results in
         disconnection (ping timeout).
-        
+
         Args:
             payload: The payload from the PING message to echo back
         """
         await self.send_raw(f"PONG :{payload}")
         logger.debug("Responded to PING")
-    
+
     async def handle_message(self, sender: str, target: str, message: str) -> None:
         """
         Process an incoming PRIVMSG and dispatch to appropriate handler.
-        
+
         This is the main message routing method. It examines incoming messages
         for commands (prefixed with !) and conversational triggers (when the
         bot's nick is mentioned).
-        
+
         Args:
             sender: Nickname of the message sender
             target: Channel or nickname where message was sent
@@ -624,12 +624,12 @@ class IRCBot:
         # Determine where to send replies
         # If message was sent to a channel, reply there; otherwise reply to sender
         reply_target = target if target.startswith("#") else sender
-        
+
         # Check for commands (messages starting with !)
         if message.startswith("!"):
             await self.handle_command(sender, reply_target, message)
             return
-        
+
         # Check for conversational triggers when bot nick is mentioned
         # Patterns: "word AvicBot" or "AvicBot word"
         match = self._pattern_before.search(message) or self._pattern_after.search(message)
@@ -637,14 +637,14 @@ class IRCBot:
             word = match.group(1).lower()
             if word in self.replies:
                 await self.send_message(reply_target, self.replies[word])
-    
+
     async def handle_command(self, sender: str, reply_target: str, message: str) -> None:
         """
         Parse and execute bot commands.
-        
+
         Commands are messages starting with ! and may include arguments.
         This method routes each command to its appropriate handler.
-        
+
         Supported commands:
             !commands - List available commands
             !die <botname> - Gracefully disconnect (owner only)
@@ -655,7 +655,7 @@ class IRCBot:
             !lang <code>? - Language code lookup
             !sing - Bot sings a song
             !random - Random number (fair dice roll)
-        
+
         Args:
             sender: Nickname of the command sender
             reply_target: Where to send command output
@@ -665,7 +665,7 @@ class IRCBot:
         parts = message.split(maxsplit=1)
         command = parts[0].lower()
         args = parts[1] if len(parts) > 1 else ""
-        
+
         # ====== !commands - List available commands ======
         if command == "!commands":
             await self.send_message(reply_target, "Commands:")
@@ -677,7 +677,7 @@ class IRCBot:
             await self.send_message(reply_target, "!guc: Global User Contributions page")
             await asyncio.sleep(0.1)
             await self.send_message(reply_target, "!die: Makes me leave :(")
-        
+
         # ====== !die - Disconnect from IRC ======
         elif command == "!die" and args.lower() == self.config.nick.lower():
             await self.send_message(reply_target, "Do you wanna build a snowman?")
@@ -687,81 +687,81 @@ class IRCBot:
             await self.send_message(reply_target, "Ok, Bye :(")
             await self.send_message(self.config.master, "I have to leave now :(")
             self.running = False  # Signal main loop to stop
-        
+
         # ====== !say - Echo message to channel ======
         elif command == "!say" and args:
             await self.send_message(reply_target, args)
             await self.send_message(self.config.master, f"Message sent: {args}")
-        
+
         # ====== !guc - Global User Contributions lookup ======
         # Links to Wikimedia's Global User Contributions tool
         elif command == "!guc" and args:
             url = f"https://guc.toolforge.org/?user={args}&blocks=true"
             await self.send_message(reply_target, url)
             await self.send_message(self.config.master, url)
-        
+
         # ====== !cauth - CentralAuth page lookup ======
         # Links to Wikimedia's CentralAuth page for the user
         elif command == "!cauth" and args:
             url = f"https://meta.wikimedia.org/wiki/Special:CentralAuth/{args}"
             await self.send_message(reply_target, url)
             await self.send_message(self.config.master, url)
-        
+
         # ====== !link - Custom link builder ======
         elif command == "!link" and args:
             url = f"http://avicbot.org/{args}"
             await self.send_message(reply_target, url)
             await self.send_message(self.config.master, url)
-        
+
         # ====== !sing - Sing a song ======
         elif command == "!sing":
             await self.send_message(reply_target, "Daisy, Daisy, Give me your answer, do.")
             await asyncio.sleep(0.1)
             await self.send_message(reply_target, "I'm half crazy all for the love of you.")
-        
+
         # ====== !random - Random number ======
         # This was chosen by a fair roll of a d20. Guaranteed to be random.
         elif command == "!random":
             await self.send_message(reply_target, "7.")
-        
+
         # ====== !lang - Language code lookup ======
         # Format: !lang <code>? (e.g., "!lang en?")
         elif command == "!lang" and args:
             await self.handle_language_lookup(reply_target, args)
-    
+
     async def handle_language_lookup(self, reply_target: str, args: str) -> None:
         """
         Look up a language code and respond with the full language name.
-        
+
         This replaces the original 280+ if-statements with a single
         dictionary lookup, making the code more maintainable and efficient.
-        
+
         Args:
             reply_target: Channel or user to send the response to
             args: The language code query (e.g., "en?" or "zh-yue?")
         """
         # Strip trailing ? and whitespace, normalize to lowercase
         code = args.rstrip("? ").lower()
-        
+
         if code in LANGUAGE_CODES:
             language_name = LANGUAGE_CODES[code]
             await self.send_message(reply_target, f"{code} is {language_name}!")
         else:
             await self.send_message(reply_target, f"Unknown language code: {code}")
-    
+
     def parse_message(self, raw_message: str) -> Optional[tuple[str, str, str, str]]:
         """
         Parse a raw IRC protocol message into its components.
-        
+
         IRC message format: [:prefix] command [params] [:trailing]
         For PRIVMSG: :nick!user@host PRIVMSG #channel :message text
-        
+
         Args:
             raw_message: The raw IRC protocol message string
-        
+
         Returns:
             Tuple of (sender_nick, command, target, message) or None if parse fails
-        
+
         Example:
             >>> parse_message(":Nick!user@host PRIVMSG #channel :Hello world")
             ("Nick", "PRIVMSG", "#channel", "Hello world")
@@ -775,42 +775,42 @@ class IRCBot:
             r"^(?::(\S+?)(?:!|\s))?\s*(\S+)\s+(\S+)\s*(?::(.*))?$",
             raw_message
         )
-        
+
         if match:
             sender = match.group(1) or ""
             command = match.group(2)
             target = match.group(3)
             message = match.group(4) or ""
             return sender, command, target, message
-        
+
         return None
-    
+
     async def run(self) -> None:
         """
         Main bot event loop.
-        
+
         This method:
         1. Connects to the IRC server
         2. Joins configured channels
         3. Continuously reads and processes incoming messages
         4. Handles PING/PONG keepalive
         5. Routes PRIVMSG to message handlers
-        
+
         The loop continues until self.running is set to False
         (typically via the !die command) or a connection error occurs.
         """
         await self.connect()
         self.running = True
-        
+
         # Join all configured channels
         for channel in self.config.channels:
             await self.join_channel(channel.strip())
-        
+
         logger.info("Bot is now running. Listening for messages...")
-        
+
         # Buffer for accumulating partial messages
         buffer = ""
-        
+
         while self.running:
             try:
                 # Read data from the server
@@ -818,62 +818,62 @@ class IRCBot:
                 if self.reader is None:
                     logger.error("Reader is None, connection lost")
                     break
-                
+
                 data = await self.reader.read(self.config.buffer_size)
-                
+
                 if not data:
                     logger.warning("Connection closed by server")
                     break
-                
+
                 # Decode and add to buffer, then process complete lines
                 buffer += data.decode("utf-8", errors="replace")
                 lines = buffer.split("\r\n")
-                
+
                 # Keep the last incomplete line in the buffer
                 buffer = lines.pop()
-                
+
                 for line in lines:
                     if not line:
                         continue
-                    
+
                     logger.debug(f"<<< {line}")
-                    
+
                     # Handle PING to keep connection alive
                     if line.startswith("PING"):
                         # Extract ping payload (everything after "PING :")
                         payload = line.split(":", 1)[1] if ":" in line else "pingis"
                         await self.handle_ping(payload)
                         continue
-                    
+
                     # Parse and route other messages
                     parsed = self.parse_message(line)
                     if parsed:
                         sender, command, target, message = parsed
-                        
+
                         if command == "PRIVMSG":
                             await self.handle_message(sender, target, message)
-                
+
                 # Small delay to prevent CPU spinning
                 await asyncio.sleep(0.1)
-                
+
             except asyncio.CancelledError:
                 logger.info("Bot shutdown requested")
                 break
             except Exception as e:
                 logger.error(f"Error in main loop: {e}")
                 await asyncio.sleep(1)  # Brief delay before retry
-        
+
         # Clean up connection
         await self.disconnect()
-    
+
     async def disconnect(self) -> None:
         """
         Gracefully disconnect from the IRC server.
-        
+
         Sends a QUIT message and closes the connection properly.
         """
         logger.info("Disconnecting from IRC server...")
-        
+
         try:
             if self.writer:
                 await self.send_raw("QUIT :Goodbye!")
@@ -881,7 +881,7 @@ class IRCBot:
                 await self.writer.wait_closed()
         except Exception as e:
             logger.error(f"Error during disconnect: {e}")
-        
+
         self.reader = None
         self.writer = None
         logger.info("Disconnected.")
@@ -894,33 +894,33 @@ class IRCBot:
 def main() -> int:
     """
     Application entry point.
-    
+
     Creates the bot configuration from environment variables,
     instantiates the IRCBot, and runs the async event loop.
-    
+
     Returns:
         Exit code (0 for success, 1 for error)
     """
     logger.info("=" * 60)
     logger.info("AvicBotIRC - Starting up")
     logger.info("=" * 60)
-    
+
     try:
         # Load configuration from environment or use defaults
         config = BotConfig()
-        
+
         logger.info(f"Bot Nick: {config.nick}")
         logger.info(f"Server: {config.server}:{config.port}")
         logger.info(f"Channels: {', '.join(config.channels)}")
         logger.info(f"Master: {config.master}")
-        
+
         # Create and run the bot
         bot = IRCBot(config)
         asyncio.run(bot.run())
-        
+
         logger.info("Bot shutdown complete.")
         return 0
-        
+
     except KeyboardInterrupt:
         logger.info("Interrupted by user (Ctrl+C)")
         return 0

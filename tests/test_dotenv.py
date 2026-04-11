@@ -1,8 +1,6 @@
 """Tests for the .env loader and BotConfig."""
 
 import os
-import tempfile
-from pathlib import Path
 
 import pytest
 

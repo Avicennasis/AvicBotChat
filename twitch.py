@@ -39,6 +39,8 @@ from pathlib import Path
 # -----------------------------------------------------------------------------
 # Loads TWITCH_OAUTH_TOKEN from a repo-root .env file if present.
 # Environment variables always win over .env entries.
+
+
 def _load_dotenv(dotenv_path: Path) -> None:
     """Minimal .env loader.
 
@@ -71,7 +73,6 @@ _load_dotenv(Path(__file__).resolve().parent / ".env")
 PASS: str = os.getenv("TWITCH_OAUTH_TOKEN", "").strip()
 if PASS and not PASS.startswith("oauth:"):
     PASS = f"oauth:{PASS}"
-
 
 
 # =============================================================================
@@ -778,7 +779,7 @@ class TwitchBot:
 
         # Compliment the owner's music picks
         if (":avicennasis!avicennasis@avicennasis.tmi.twitch.tv "
-            "PRIVMSG #noobenheim :!request " in message):
+                "PRIVMSG #noobenheim :!request " in message):
             self.send_message(channel, "Ooo, good pick Avic!")
             logger.info("Sent owner compliment")
 
