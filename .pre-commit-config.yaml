@@ -1,0 +1,17 @@
+# Matches CI in .github/workflows/ci.yml
+# Install: pre-commit install
+# Manual run: pre-commit run --all-files
+repos:
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.3.0
+    hooks:
+      - id: flake8
+        args: ["--max-line-length=120"]
+        exclude: "__pycache__"
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.9.4
+    hooks:
+      - id: bandit
+        args: ["-s", "B603,B404,B101"]
+        exclude: "^tests/"
