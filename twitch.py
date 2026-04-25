@@ -25,13 +25,13 @@ chat messages automatically.
 # IMPORTS
 # =============================================================================
 
-import logging          # For structured logging instead of print statements
-import os               # For reading environment variables (.env)
-import re               # For regular expression pattern matching
+import logging  # For structured logging instead of print statements
+import os  # For reading environment variables (.env)
+import re  # For regular expression pattern matching
 from typing import Optional
-import socket           # For IRC socket connection
-import sys              # For system exit codes
-import time             # For delays between messages
+import socket  # For IRC socket connection
+import sys  # For system exit codes
+import time  # For delays between messages
 from pathlib import Path
 
 # -----------------------------------------------------------------------------
@@ -81,11 +81,7 @@ if PASS and not PASS.startswith("oauth:"):
 
 # Set up logging to replace print statements with structured logging
 # This provides timestamps, log levels, and better debugging capabilities
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 logger = logging.getLogger(__name__)
 
 
@@ -94,8 +90,8 @@ logger = logging.getLogger(__name__)
 # =============================================================================
 
 # Exit codes for the program
-EXIT_SUCCESS: int = 0   # Program exited successfully
-EXIT_FAILURE: int = 1   # Program encountered an error
+EXIT_SUCCESS: int = 0  # Program exited successfully
+EXIT_FAILURE: int = 1  # Program encountered an error
 
 # Buffer size for receiving IRC messages (in bytes)
 # 10KB should be sufficient for most Twitch chat messages
@@ -111,6 +107,7 @@ EXTRA_LONG_DELAY: float = 10.0
 # =============================================================================
 # BOT CONFIGURATION
 # =============================================================================
+
 
 class BotConfig:
     """
@@ -146,23 +143,24 @@ class BotConfig:
 # When the bot sees a message ending with "keyword AvicBot" or "AvicBot keyword",
 # it will respond with the corresponding message
 SIMPLE_REPLIES: dict[str, str] = {
-    'die':      "No, you",
-    'goodbye':  "I'll miss you",
-    'sayonara': "I'll miss you",
-    'scram':    "No, you",
-    'shout':    "NO I WON'T",
-    'dance':    f"*{BotConfig.NICK} dances*",
-    'hi':       "Hi!",
-    'hello':    "Hello!",
-    'howdy':    "Howdy there, partner!",
-    'time':     "It is TIME for a RHYME",
-    'master':   f"{BotConfig.MASTER} is my master",
+    "die": "No, you",
+    "goodbye": "I'll miss you",
+    "sayonara": "I'll miss you",
+    "scram": "No, you",
+    "shout": "NO I WON'T",
+    "dance": f"*{BotConfig.NICK} dances*",
+    "hi": "Hi!",
+    "hello": "Hello!",
+    "howdy": "Howdy there, partner!",
+    "time": "It is TIME for a RHYME",
+    "master": f"{BotConfig.MASTER} is my master",
 }
 
 
 # =============================================================================
 # TWITCH BOT CLASS
 # =============================================================================
+
 
 class TwitchBot:
     """
@@ -199,20 +197,14 @@ class TwitchBot:
         # Compile regex patterns for matching bot mentions
         # Pattern 1: "word AvicBot" - keyword before bot name
         # Pattern 2: "AvicBot word" - keyword after bot name
-        self._pattern_before = re.compile(
-            rf'.*:(\w+)\W*{self.config.NICK}\W*$',
-            re.IGNORECASE
-        )
-        self._pattern_after = re.compile(
-            rf'.*:{self.config.NICK}\W*(\w+)\W*$',
-            re.IGNORECASE
-        )
+        self._pattern_before = re.compile(rf".*:(\w+)\W*{self.config.NICK}\W*$", re.IGNORECASE)
+        self._pattern_after = re.compile(rf".*:{self.config.NICK}\W*(\w+)\W*$", re.IGNORECASE)
 
         # Cooldown tracker for 'lol' responses (in seconds)
         self.last_lol_trigger: float = 0
 
         # Compiled regex for whole-word matching of laughter keywords
-        self._lol_pattern = re.compile(r'\b(lol|lmao|rofl)\b')
+        self._lol_pattern = re.compile(r"\b(lol|lmao|rofl)\b")
 
     # =========================================================================
     # CONNECTION METHODS
@@ -326,7 +318,7 @@ class TwitchBot:
                     break
 
                 # Decode and clean up the message
-                message = raw_data.decode("utf-8", errors="ignore").strip('\n\r')
+                message = raw_data.decode("utf-8", errors="ignore").strip("\n\r")
 
                 # Log received message for debugging
                 logger.debug(f"Received: {message}")
@@ -529,18 +521,12 @@ class TwitchBot:
 
         # The Matrix - Classic "what is the matrix" response
         if "what is the matrix?" in msg_lower:
-            self.send_message(
-                channel,
-                "No-one can be told what the matrix is. You have to see it for yourself."
-            )
+            self.send_message(channel, "No-one can be told what the matrix is. You have to see it for yourself.")
             logger.info("Sent Matrix quote")
 
         # Location query - Where are we?
         if "where are we?" in msg_lower:
-            self.send_message(
-                channel,
-                f"Last I checked, we were in {channel}, sooo..."
-            )
+            self.send_message(channel, f"Last I checked, we were in {channel}, sooo...")
             logger.info("Sent location response")
 
         # =================================================================
@@ -560,20 +546,14 @@ class TwitchBot:
         # Portal 2 - Cave Johnson's lemon rant
         if "lemons" in msg_lower:
             self.send_message(
-                channel,
-                "When life gives you lemons, don't make lemonade. "
-                "Make life take the lemons back! Get mad!"
+                channel, "When life gives you lemons, don't make lemonade. Make life take the lemons back! Get mad!"
             )
+            time.sleep(MESSAGE_DELAY)
+            self.send_message(channel, "I don't want your damn lemons! What the hell am I supposed to do with these!?")
             time.sleep(MESSAGE_DELAY)
             self.send_message(
                 channel,
-                "I don't want your damn lemons! What the hell am I supposed to do with these!?"
-            )
-            time.sleep(MESSAGE_DELAY)
-            self.send_message(
-                channel,
-                "Demand to see life's manager! Make life rue the day it thought "
-                "it could give Cave Johnson lemons!"
+                "Demand to see life's manager! Make life rue the day it thought it could give Cave Johnson lemons!",
             )
             logger.info("Sent lemons speech")
 
@@ -586,18 +566,12 @@ class TwitchBot:
             time.sleep(MESSAGE_DELAY)
             self.send_message(channel, "He's brandishing a knife. It's Shia Labeouf.")
             time.sleep(MESSAGE_DELAY)
-            self.send_message(
-                channel,
-                "Lurking in the shadows... Hollywood superstar Shia Labeouf."
-            )
+            self.send_message(channel, "Lurking in the shadows... Hollywood superstar Shia Labeouf.")
             logger.info("Sent Shia LaBeouf song")
 
         # Request Shia song
         if "request shia" in msg_lower:
-            self.send_message(
-                channel,
-                "!request https://www.youtube.com/watch?v=o0u4M6vppCI"
-            )
+            self.send_message(channel, "!request https://www.youtube.com/watch?v=o0u4M6vppCI")
             logger.info("Sent Shia LaBeouf video request")
 
         # =================================================================
@@ -615,10 +589,7 @@ class TwitchBot:
 
         # Blink-182 - All The Small Things
         if "work sucks" in msg_lower:
-            self.send_message(
-                channel,
-                "I know. She left me roses by the stairs."
-            )
+            self.send_message(channel, "I know. She left me roses by the stairs.")
             time.sleep(MESSAGE_DELAY)
             self.send_message(channel, "Surprises let me know she cares.")
             logger.info("Sent Blink-182 lyrics")
@@ -628,22 +599,20 @@ class TwitchBot:
             self.send_message(
                 channel,
                 "'Cause everyone's your friend in New York City! "
-                "And everything looks beautiful when you're young and pretty."
+                "And everything looks beautiful when you're young and pretty.",
             )
             time.sleep(MESSAGE_DELAY)
             self.send_message(
                 channel,
                 "The streets are paved with diamonds and there's just so much to see. "
-                "But the best thing about New York City is you and me."
+                "But the best thing about New York City is you and me.",
             )
             logger.info("Sent New York City lyrics")
 
         # The Muppets - Rainbow Connection
         if "rainbow" in msg_lower:
             self.send_message(
-                channel,
-                "Someday we'll find it, the rainbow connection. "
-                "The lovers, the dreamers and me."
+                channel, "Someday we'll find it, the rainbow connection. The lovers, the dreamers and me."
             )
             logger.info("Sent Rainbow Connection")
 
@@ -658,35 +627,20 @@ class TwitchBot:
 
         # Avenue Q - Everyone's A Little Bit Racist
         if "racist" in msg_lower:
-            self.send_message(
-                channel,
-                "Everyone's a little bit racist, Sometimes."
-            )
+            self.send_message(channel, "Everyone's a little bit racist, Sometimes.")
             time.sleep(MESSAGE_DELAY)
-            self.send_message(
-                channel,
-                "Doesn't mean we go around committing hate crimes!"
-            )
+            self.send_message(channel, "Doesn't mean we go around committing hate crimes!")
             logger.info("Sent Avenue Q lyrics")
 
         # The Producers - Springtime for Hitler
         if "hitler" in msg_lower:
-            self.send_message(
-                channel,
-                "Springtime for Hitler and Germany! Deutschland is happy and gay!"
-            )
+            self.send_message(channel, "Springtime for Hitler and Germany! Deutschland is happy and gay!")
             time.sleep(MESSAGE_DELAY)
-            self.send_message(
-                channel,
-                "We're marching to a faster pace! Look out, here comes the master race!"
-            )
+            self.send_message(channel, "We're marching to a faster pace! Look out, here comes the master race!")
             logger.info("Sent The Producers - Hitler")
 
         if "nazi" in msg_lower:
-            self.send_message(
-                channel,
-                "Don't be stupid, be a smarty, come and join the Nazi party!"
-            )
+            self.send_message(channel, "Don't be stupid, be a smarty, come and join the Nazi party!")
             logger.info("Sent The Producers - Nazi")
 
         # Gilbert & Sullivan - The Pirates of Penzance
@@ -702,25 +656,16 @@ class TwitchBot:
             self.send_message(channel, "So what can I say except you're welcome?")
             logger.info("Sent You're Welcome")
         elif "thank you" in msg_lower:
-            self.send_message(
-                channel,
-                "I guess it's just my way of being me! You're welcome, you're welcome!"
-            )
+            self.send_message(channel, "I guess it's just my way of being me! You're welcome, you're welcome!")
             logger.info("Sent You're Welcome")
 
         # Shiny - Tamatoa's song
         if "shiny" in msg_lower:
             self.send_message(
-                channel,
-                "Shiny! Watch me dazzle like a diamond in the rough. "
-                "Strut my stuff; my stuff is so"
+                channel, "Shiny! Watch me dazzle like a diamond in the rough. Strut my stuff; my stuff is so"
             )
             time.sleep(LONG_MESSAGE_DELAY)
-            self.send_message(
-                channel,
-                "Shiny! Send your armies but they'll never be enough. "
-                "My shell's too tough!"
-            )
+            self.send_message(channel, "Shiny! Send your armies but they'll never be enough. My shell's too tough!")
             logger.info("Sent Shiny song")
 
         # =================================================================
@@ -757,20 +702,11 @@ class TwitchBot:
 
         # Crazy loop
         if "crazy" in msg_lower:
-            self.send_message(
-                channel,
-                "Crazy? I was crazy once. They locked me up in a padded room until I died."
-            )
+            self.send_message(channel, "Crazy? I was crazy once. They locked me up in a padded room until I died.")
             time.sleep(MESSAGE_DELAY)
-            self.send_message(
-                channel,
-                "They put 3 flowers on my grave. Two grew up, and one grew down."
-            )
+            self.send_message(channel, "They put 3 flowers on my grave. Two grew up, and one grew down.")
             time.sleep(MESSAGE_DELAY)
-            self.send_message(
-                channel,
-                "The roots tickled my nose. It drove me crazy."
-            )
+            self.send_message(channel, "The roots tickled my nose. It drove me crazy.")
             logger.info("Sent Crazy message")
 
         # =================================================================
@@ -778,8 +714,7 @@ class TwitchBot:
         # =================================================================
 
         # Compliment the owner's music picks
-        if (":avicennasis!avicennasis@avicennasis.tmi.twitch.tv "
-                "PRIVMSG #noobenheim :!request " in message):
+        if ":avicennasis!avicennasis@avicennasis.tmi.twitch.tv PRIVMSG #noobenheim :!request " in message:
             self.send_message(channel, "Ooo, good pick Avic!")
             logger.info("Sent owner compliment")
 
@@ -812,10 +747,7 @@ class TwitchBot:
             self.send_message(channel, line)
             time.sleep(LONG_MESSAGE_DELAY)
 
-        self.send_message(
-            channel,
-            "With many cheerful facts about the square of the hypotenuse."
-        )
+        self.send_message(channel, "With many cheerful facts about the square of the hypotenuse.")
         time.sleep(LONG_MESSAGE_DELAY)
 
         # Verse 2
@@ -837,10 +769,7 @@ class TwitchBot:
             self.send_message(channel, line)
             time.sleep(LONG_MESSAGE_DELAY)
 
-        self.send_message(
-            channel,
-            "And whistle all the airs from that infernal nonsense Pinafore."
-        )
+        self.send_message(channel, "And whistle all the airs from that infernal nonsense Pinafore.")
         time.sleep(LONG_MESSAGE_DELAY)
 
         # Verse 3
@@ -862,10 +791,7 @@ class TwitchBot:
             self.send_message(channel, line)
             time.sleep(LONG_MESSAGE_DELAY)
 
-        self.send_message(
-            channel,
-            "You'll say a better Major-General has never sat a gee."
-        )
+        self.send_message(channel, "You'll say a better Major-General has never sat a gee.")
         time.sleep(LONG_MESSAGE_DELAY)
 
         # Finale
@@ -886,6 +812,7 @@ class TwitchBot:
 # =============================================================================
 # MAIN ENTRY POINT
 # =============================================================================
+
 
 def main() -> int:
     """

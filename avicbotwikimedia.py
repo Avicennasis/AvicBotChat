@@ -36,6 +36,7 @@ from pathlib import Path
 # Loads configuration from a repo-root .env file if present.
 # Environment variables always win over .env entries.
 
+
 def _load_dotenv(dotenv_path: Path) -> None:
     """Minimal .env loader.
 
@@ -86,6 +87,7 @@ logger = logging.getLogger("AvicBot")
 # Configuration is loaded from environment variables with fallback defaults.
 # This allows deployment flexibility without code changes.
 
+
 @dataclass
 class BotConfig:
     """
@@ -113,6 +115,7 @@ class BotConfig:
         password: Optional NickServ password for authentication
         buffer_size: Size of the network receive buffer in bytes
     """
+
     nick: str = field(default_factory=lambda: os.getenv("AVICBOT_NICK", "AvicBot"))
     server: str = field(default_factory=lambda: os.getenv("AVICBOT_SERVER", "irc.libera.chat"))
     port: int = field(default_factory=lambda: int(os.getenv("AVICBOT_PORT", "6667")))
@@ -201,7 +204,6 @@ LANGUAGE_CODES: dict[str, str] = {
     "gd": "Scottish Gaelic",
     "fo": "Faroese",
     "kl": "Greenlandic",
-
     # Regional and minority languages
     "war": "Waray-Waray",
     "ceb": "Cebuano",
@@ -456,6 +458,7 @@ CONVERSATIONAL_REPLIES: dict[str, str] = {
 # IRC BOT CLASS
 # =============================================================================
 
+
 class IRCBot:
     """
     Asynchronous IRC Bot implementation.
@@ -504,12 +507,8 @@ class IRCBot:
         # Compile regex patterns for matching bot mentions
         # Pattern 1: "word AvicBot" - keyword before bot name
         # Pattern 2: "AvicBot word" - keyword after bot name
-        self._pattern_before = re.compile(
-            rf"(\w+)\W*{self.config.nick}\W*$", re.IGNORECASE
-        )
-        self._pattern_after = re.compile(
-            rf"{self.config.nick}\W*(\w+)\W*$", re.IGNORECASE
-        )
+        self._pattern_before = re.compile(rf"(\w+)\W*{self.config.nick}\W*$", re.IGNORECASE)
+        self._pattern_after = re.compile(rf"{self.config.nick}\W*(\w+)\W*$", re.IGNORECASE)
 
     async def connect(self) -> None:
         """
@@ -526,10 +525,7 @@ class IRCBot:
         logger.info(f"Connecting to {self.config.server}:{self.config.port}...")
 
         # Open async TCP connection to the IRC server
-        self.reader, self.writer = await asyncio.open_connection(
-            self.config.server,
-            self.config.port
-        )
+        self.reader, self.writer = await asyncio.open_connection(self.config.server, self.config.port)
 
         logger.info("Connection established, sending registration...")
 
@@ -771,10 +767,7 @@ class IRCBot:
         # Group 2: command (e.g., PRIVMSG, JOIN, PING)
         # Group 3: target (channel or nick)
         # Group 4: message content (after the :)
-        match = re.match(
-            r"^(?::(\S+?)(?:!|\s))?\s*(\S+)\s+(\S+)\s*(?::(.*))?$",
-            raw_message
-        )
+        match = re.match(r"^(?::(\S+?)(?:!|\s))?\s*(\S+)\s+(\S+)\s*(?::(.*))?$", raw_message)
 
         if match:
             sender = match.group(1) or ""
@@ -890,6 +883,7 @@ class IRCBot:
 # =============================================================================
 # MAIN ENTRY POINT
 # =============================================================================
+
 
 def main() -> int:
     """

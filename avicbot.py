@@ -113,7 +113,7 @@ def _terminate(proc: subprocess.Popen) -> None:
     except Exception:
         try:
             proc.terminate()
-        except Exception:  # nosec B110 — last-resort cleanup, nothing to handle
+        except Exception:  # noqa: S110 — last-resort cleanup, nothing to handle
             pass
 
 
@@ -155,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
                         p.kill()
                     else:
                         os.killpg(p.pid, signal.SIGKILL)
-                except Exception:  # nosec B110 — last-resort cleanup, nothing to handle
+                except Exception:  # noqa: S110 — last-resort cleanup, nothing to handle
                     pass
         return 130
 
