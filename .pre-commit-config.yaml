@@ -1,17 +1,22 @@
-# Matches CI in .github/workflows/ci.yml
-# Install: pre-commit install
-# Manual run: pre-commit run --all-files
+# See https://pre-commit.com for usage and https://pre-commit.com/hooks.html for more hooks.
+# Migrated from flake8+bandit to ruff (which covers both via the S rule group).
 repos:
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.3.0
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
     hooks:
-      - id: flake8
-        args: ["--max-line-length=120"]
-        exclude: "__pycache__"
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
 
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.9.4
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.11
     hooks:
-      - id: bandit
-        args: ["-s", "B603,B404,B101"]
-        exclude: "^tests/"
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format

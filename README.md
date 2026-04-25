@@ -1,5 +1,12 @@
 # AvicBotChat
 
+[![CI](https://github.com/Avicennasis/AvicBotChat/actions/workflows/test.yml/badge.svg)](https://github.com/Avicennasis/AvicBotChat/actions/workflows/test.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Avicennasis/AvicBotChat/badge)](https://scorecard.dev/viewer/?uri=github.com/Avicennasis/AvicBotChat)
+[![Release](https://img.shields.io/github/v/release/Avicennasis/AvicBotChat?display_name=tag)](https://github.com/Avicennasis/AvicBotChat/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
 Two bots, one launcher:
 
 - **Twitch bot** (Twitch IRC / tmi): `twitch.py`
