@@ -562,7 +562,10 @@ class IRCBot:
         # Encode the message and append IRC protocol line terminator
         self.writer.write(f"{message}\r\n".encode("utf-8"))
         await self.writer.drain()  # Ensure data is sent
-        logger.debug(f">>> {message}")
+        if message.upper().startswith("PASS"):
+            logger.debug(">>> PASS [REDACTED]")
+        else:
+            logger.debug(f">>> {message}")
 
     async def send_message(self, target: str, message: str) -> None:
         """
