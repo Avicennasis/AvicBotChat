@@ -562,8 +562,9 @@ class IRCBot:
         # Encode the message and append IRC protocol line terminator
         self.writer.write(f"{message}\r\n".encode("utf-8"))
         await self.writer.drain()  # Ensure data is sent
-        if message.upper().startswith("PASS"):
-            logger.debug(">>> PASS [REDACTED]")
+        upper = message.upper()
+        if upper.startswith("PASS") or "IDENTIFY" in upper or "NICKSERV" in upper:
+            logger.debug(">>> [REDACTED AUTH COMMAND]")
         else:
             logger.debug(f">>> {message}")
 
