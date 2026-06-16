@@ -566,7 +566,9 @@ class IRCBot:
         if upper.startswith("PASS") or "IDENTIFY" in upper or "NICKSERV" in upper:
             logger.debug(">>> [REDACTED AUTH COMMAND]")
         else:
-            logger.debug(f">>> {message}")
+            # Log only the IRC verb to avoid leaking message content.
+            verb = message.split(" ", 1)[0]
+            logger.debug(">>> %s ...", verb)
 
     async def send_message(self, target: str, message: str) -> None:
         """
