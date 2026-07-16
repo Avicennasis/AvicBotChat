@@ -30,6 +30,7 @@ import os  # For reading environment variables (.env)
 import re  # For regular expression pattern matching
 from typing import Optional
 import socket  # For IRC socket connection
+import ssl  # For TLS-encrypted IRC connection
 import sys  # For system exit codes
 import time  # For delays between messages
 from pathlib import Path
@@ -97,6 +98,12 @@ EXIT_FAILURE: int = 1  # Program encountered an error
 # 10KB should be sufficient for most Twitch chat messages
 BUFFER_SIZE: int = 10240
 
+# Read timeout for the receive loop (in seconds). Enables the socket.timeout
+# handling in run() so a stalled/dead connection can't hang the process
+# forever. Longer than Twitch's ~5-minute server PING interval so a quiet
+# channel doesn't trip it during normal operation.
+SOCKET_TIMEOUT: float = 330.0
+
 # Default delay between multi-line messages (in seconds)
 # Twitch rate-limits messages, so we need delays to avoid being throttled
 MESSAGE_DELAY: float = 2.0
@@ -120,7 +127,7 @@ class BotConfig:
         NICK: The bot's nickname displayed in chat
         CHANNEL: The Twitch channel to join (must include # prefix)
         SERVER: Twitch's IRC server hostname
-        PORT: IRC server port (6667 for non-SSL)
+        PORT: IRC server port (6697 for TLS/SSL)
         MASTER: The bot owner's username (for special commands)
         USERNAME: IRC username for authentication
         REALNAME: IRC "real name" field
@@ -129,7 +136,7 @@ class BotConfig:
     NICK: str = "AvicBot"
     CHANNEL: str = "#noobenheim"
     SERVER: str = "irc.twitch.tv"
-    PORT: int = 6667
+    PORT: int = 6697
     MASTER: str = "Avicennasis"
     USERNAME: str = "AvicBot"
     REALNAME: str = "Avicennasis"
@@ -224,9 +231,18 @@ class TwitchBot:
         """
         logger.info(f"Connecting to {self.config.SERVER}:{self.config.PORT}...")
 
-        # Create TCP socket for IRC connection
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # Create a TCP socket and wrap it in TLS so the OAuth token — sent via
+        # the PASS command during authentication — travels encrypted rather than
+        # in plaintext. Twitch serves IRC over TLS on port 6697.
+        raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        context = ssl.create_default_context()
+        self.socket = context.wrap_socket(raw_sock, server_hostname=self.config.SERVER)
         self.socket.connect((self.config.SERVER, self.config.PORT))
+
+        # Enable the receive-loop timeout so a stalled connection can't hang the
+        # process indefinitely (the except socket.timeout branch in run()).
+        self.socket.settimeout(SOCKET_TIMEOUT)
+
         # Authenticate with Twitch using OAuth token
         # The PASS command must be sent before NICK/USER
         if not PASS:
@@ -304,6 +320,11 @@ class TwitchBot:
         """
         logger.info("Bot is now running. Listening for messages...")
 
+        # Buffer for accumulating partial messages. A single recv() may return
+        # several IRC messages concatenated, or split one mid-stream, so we
+        # accumulate bytes and only process complete CRLF-terminated lines.
+        buffer = ""
+
         while self.running:
             try:
                 if self.socket is None:
@@ -317,14 +338,24 @@ class TwitchBot:
                     logger.warning("Connection closed by server")
                     break
 
-                # Decode and clean up the message
-                message = raw_data.decode("utf-8", errors="ignore").strip("\n\r")
+                # Decode and append to the buffer, then split into complete
+                # lines on the IRC CRLF terminator.
+                buffer += raw_data.decode("utf-8", errors="ignore")
+                lines = buffer.split("\r\n")
 
-                # Log received message for debugging
-                logger.debug(f"Received: {message}")
+                # The final element is any trailing incomplete line; keep it in
+                # the buffer to be completed by the next recv().
+                buffer = lines.pop()
 
-                # Process the message for triggers and commands
-                self._process_message(message)
+                for line in lines:
+                    if not line:
+                        continue
+
+                    # Log received message for debugging
+                    logger.debug(f"Received: {line}")
+
+                    # Process the message for triggers and commands
+                    self._process_message(line)
 
             except socket.timeout:
                 # Socket timeout is normal, just continue
@@ -502,6 +533,21 @@ class TwitchBot:
                 self.send_message(channel, f"*Gives a beer to {recipient}!* Drink up!")
                 logger.info(f"Sent beer to: {recipient}")
 
+    @staticmethod
+    def _word_in(word: str, text: str) -> bool:
+        """
+        Return True if `word` occurs in `text` as a whole word.
+
+        Uses regex word boundaries so a keyword like "love" matches "I love it"
+        but not "glove" or "clover", and "cake" doesn't fire on "cupcake". This
+        avoids the false positives of a bare substring (`word in text`) check.
+
+        Args:
+            word: The keyword/phrase to look for (matched case-insensitively).
+            text: The (already lowercased) message text to search.
+        """
+        return re.search(rf"\b{re.escape(word)}\b", text) is not None
+
     def _handle_triggers(self, message: str) -> None:
         """
         Handle keyword triggers that cause fun responses.
@@ -534,12 +580,12 @@ class TwitchBot:
         # =================================================================
 
         # Portal - The cake is a lie!
-        if "cake" in msg_lower:
+        if self._word_in("cake", msg_lower):
             self.send_message(channel, "The cake is a lie!")
             logger.info("Sent cake response")
 
         # Portal - Thinking with portals
-        if "portal" in msg_lower:
+        if self._word_in("portal", msg_lower):
             self.send_message(channel, "Now you're thinking with portals!")
             logger.info("Sent portal response")
 
@@ -579,7 +625,7 @@ class TwitchBot:
         # =================================================================
 
         # Haddaway - What is Love
-        if " love" in msg_lower:
+        if self._word_in("love", msg_lower):
             self.send_message(channel, "What is love? Baby, don't hurt me.")
             time.sleep(MESSAGE_DELAY)
             self.send_message(channel, "Don't hurt me.")
@@ -617,7 +663,7 @@ class TwitchBot:
             logger.info("Sent Rainbow Connection")
 
         # The Duck Song
-        if "duck" in msg_lower:
+        if self._word_in("duck", msg_lower):
             self.send_message(channel, "A duck walked up to a lemonade stand...")
             logger.info("Sent Duck Song")
 
@@ -660,7 +706,7 @@ class TwitchBot:
             logger.info("Sent You're Welcome")
 
         # Shiny - Tamatoa's song
-        if "shiny" in msg_lower:
+        if self._word_in("shiny", msg_lower):
             self.send_message(
                 channel, "Shiny! Watch me dazzle like a diamond in the rough. Strut my stuff; my stuff is so"
             )
@@ -694,11 +740,6 @@ class TwitchBot:
                 self.send_message(channel, "lol")
                 self.last_lol_trigger = current_time
                 logger.info("Sent lol")
-
-        # Ping response triggers lol (keep chat active)
-        if "PING :tmi.twitch.tv" in message:
-            self.send_message(channel, "lol")
-            logger.info("Sent lol (ping trigger)")
 
         # Crazy loop
         if "crazy" in msg_lower:
