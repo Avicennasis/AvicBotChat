@@ -23,7 +23,12 @@ jobs:
         with:
           python-version: "3.14"
 
-      - run: pip install ruff
+      # Pinned, not floating. ruff 0.16.0 expanded its DEFAULT rule set (EXE, I,
+      # UP now fire where 0.15.x reported nothing), so an unpinned install turns a
+      # ruff release into a red build on a day nobody touched this repo. 0.15.22 is
+      # the newest release this tree passes; adopting 0.16's rules is separate work.
+      # Keep in step with the ruff-pre-commit rev in .pre-commit-config.yaml.
+      - run: pip install ruff==0.15.22
       - run: ruff check .
       - run: ruff format --check .
 
