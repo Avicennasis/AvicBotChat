@@ -590,7 +590,7 @@ class TwitchBot:
             logger.info("Sent portal response")
 
         # Portal 2 - Cave Johnson's lemon rant
-        if "lemons" in msg_lower:
+        if self._word_in("lemons", msg_lower):
             self.send_message(
                 channel, "When life gives you lemons, don't make lemonade. Make life take the lemons back! Get mad!"
             )
@@ -656,7 +656,7 @@ class TwitchBot:
             logger.info("Sent New York City lyrics")
 
         # The Muppets - Rainbow Connection
-        if "rainbow" in msg_lower:
+        if self._word_in("rainbow", msg_lower):
             self.send_message(
                 channel, "Someday we'll find it, the rainbow connection. The lovers, the dreamers and me."
             )
@@ -672,25 +672,25 @@ class TwitchBot:
         # =================================================================
 
         # Avenue Q - Everyone's A Little Bit Racist
-        if "racist" in msg_lower:
+        if self._word_in("racist", msg_lower):
             self.send_message(channel, "Everyone's a little bit racist, Sometimes.")
             time.sleep(MESSAGE_DELAY)
             self.send_message(channel, "Doesn't mean we go around committing hate crimes!")
             logger.info("Sent Avenue Q lyrics")
 
         # The Producers - Springtime for Hitler
-        if "hitler" in msg_lower:
+        if self._word_in("hitler", msg_lower):
             self.send_message(channel, "Springtime for Hitler and Germany! Deutschland is happy and gay!")
             time.sleep(MESSAGE_DELAY)
             self.send_message(channel, "We're marching to a faster pace! Look out, here comes the master race!")
             logger.info("Sent The Producers - Hitler")
 
-        if "nazi" in msg_lower:
+        if self._word_in("nazi", msg_lower):
             self.send_message(channel, "Don't be stupid, be a smarty, come and join the Nazi party!")
             logger.info("Sent The Producers - Nazi")
 
         # Gilbert & Sullivan - The Pirates of Penzance
-        if "major-general" in msg_lower:
+        if self._word_in("major-general", msg_lower):
             self._sing_major_general()
 
         # =================================================================
@@ -698,10 +698,10 @@ class TwitchBot:
         # =================================================================
 
         # You're Welcome - Maui's song
-        if "thanks" in msg_lower:
+        if self._word_in("thanks", msg_lower):
             self.send_message(channel, "So what can I say except you're welcome?")
             logger.info("Sent You're Welcome")
-        elif "thank you" in msg_lower:
+        elif self._word_in("thank you", msg_lower):
             self.send_message(channel, "I guess it's just my way of being me! You're welcome, you're welcome!")
             logger.info("Sent You're Welcome")
 
@@ -719,16 +719,16 @@ class TwitchBot:
         # =================================================================
 
         # Classic internet humor
-        if "boobs" in msg_lower:
+        if self._word_in("boobs", msg_lower):
             self.send_message(channel, "BOOBS!")
             logger.info("Sent BOOBS!")
 
-        if "boobies" in msg_lower:
+        if self._word_in("boobies", msg_lower):
             self.send_message(channel, "BOOBIES!")
             logger.info("Sent BOOBIES!")
 
         # Common chat expressions
-        if "yay" in msg_lower:
+        if self._word_in("yay", msg_lower):
             self.send_message(channel, "Yay! ^_^")
             logger.info("Sent Yay!")
 
@@ -742,7 +742,7 @@ class TwitchBot:
                 logger.info("Sent lol")
 
         # Crazy loop
-        if "crazy" in msg_lower:
+        if self._word_in("crazy", msg_lower):
             self.send_message(channel, "Crazy? I was crazy once. They locked me up in a padded room until I died.")
             time.sleep(MESSAGE_DELAY)
             self.send_message(channel, "They put 3 flowers on my grave. Two grew up, and one grew down.")
