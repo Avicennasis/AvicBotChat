@@ -150,3 +150,39 @@ class TestLoggableVerb:
             out = _loggable_verb(line)
             assert payload not in out
             assert out in allowed
+
+
+class TestTLSContext:
+    """The Twitch bot sends its OAuth token via PASS, so the TLS floor matters.
+
+    `ssl.create_default_context()` leaves `minimum_version` at the
+    MINIMUM_SUPPORTED sentinel, which permits TLS 1.0/1.1 wherever the
+    platform still enables them (CodeQL alert #13).
+    """
+
+    def test_context_pins_tls12_floor(self):
+        import ssl
+
+        from twitch import _make_tls_context
+
+        # Negative control: exhibit a context that FAILS the assertion below,
+        # so it cannot pass vacuously. Deliberately not asserting anything
+        # about create_default_context()'s own default — that varies by
+        # interpreter (3.12 reports the MINIMUM_SUPPORTED sentinel, 3.14
+        # already pins TLS 1.2), so a control built on it passes locally and
+        # fails in CI, which is exactly what happened here.
+        permissive = ssl.create_default_context()
+        permissive.minimum_version = ssl.TLSVersion.MINIMUM_SUPPORTED
+        assert permissive.minimum_version < ssl.TLSVersion.TLSv1_2
+
+        assert _make_tls_context().minimum_version >= ssl.TLSVersion.TLSv1_2
+
+    def test_context_still_verifies_certificates(self):
+        import ssl
+
+        from twitch import _make_tls_context
+
+        ctx = _make_tls_context()
+        # hardening the floor must not weaken verification
+        assert ctx.verify_mode == ssl.CERT_REQUIRED
+        assert ctx.check_hostname is True

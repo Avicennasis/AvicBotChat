@@ -116,6 +116,20 @@ EXTRA_LONG_DELAY: float = 10.0
 # =============================================================================
 
 
+def _make_tls_context() -> ssl.SSLContext:
+    """Return a TLS context with a TLS 1.2 floor.
+
+    `ssl.create_default_context()` leaves `minimum_version` at the
+    MINIMUM_SUPPORTED sentinel, so TLS 1.0/1.1 remain permitted wherever
+    the platform still enables them. This bot sends its OAuth token in the
+    IRC PASS command, so the negotiated floor is what protects that token
+    in transit.
+    """
+    context = ssl.create_default_context()
+    context.minimum_version = ssl.TLSVersion.TLSv1_2
+    return context
+
+
 class BotConfig:
     """
     Configuration class holding all bot settings.
@@ -235,7 +249,7 @@ class TwitchBot:
         # the PASS command during authentication — travels encrypted rather than
         # in plaintext. Twitch serves IRC over TLS on port 6697.
         raw_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        context = ssl.create_default_context()
+        context = _make_tls_context()
         self.socket = context.wrap_socket(raw_sock, server_hostname=self.config.SERVER)
         self.socket.connect((self.config.SERVER, self.config.PORT))
 
