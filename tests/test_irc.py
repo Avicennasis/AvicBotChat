@@ -172,7 +172,7 @@ class TestTLSContext:
         # already pins TLS 1.2), so a control built on it passes locally and
         # fails in CI, which is exactly what happened here.
         permissive = ssl.create_default_context()
-        permissive.minimum_version = ssl.TLSVersion.TLSv1
+        permissive.minimum_version = ssl.TLSVersion.MINIMUM_SUPPORTED
         assert permissive.minimum_version < ssl.TLSVersion.TLSv1_2
 
         assert _make_tls_context().minimum_version >= ssl.TLSVersion.TLSv1_2
