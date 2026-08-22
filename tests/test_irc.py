@@ -95,3 +95,58 @@ class TestConversationalPatterns:
         assert match is None
         match = bot._pattern_after.search("unrelated message")
         assert match is None
+
+
+class TestLoggableVerb:
+    """`send_raw` must never write any slice of an outgoing line to the log.
+
+    Redacting auth commands and then logging `message.split(" ", 1)[0]`
+    leaves the logged value data-dependent on the line itself, which is why
+    this was reported three times (CodeQL alerts #1, #9, #12 — fixed,
+    dismissed, then raised again when the line moved). The logged label now
+    comes from a constant table, so no substring of an outgoing line can
+    reach the log regardless of what the redaction branch does.
+
+    Each test carries a NEGATIVE CONTROL asserting the old naive approach
+    DID echo the token, per the house style.
+    """
+
+    @staticmethod
+    def _naive(message: str) -> str:
+        """The previous implementation, kept as the negative control."""
+        return message.split(" ", 1)[0]
+
+    def test_known_verb_maps_to_a_literal(self):
+        from avicbotwikimedia import _loggable_verb
+
+        assert _loggable_verb("PRIVMSG #chan :hello") == "PRIVMSG"
+        assert _loggable_verb("privmsg #chan :hello") == "PRIVMSG"
+
+    def test_unknown_verb_is_not_echoed(self):
+        from avicbotwikimedia import _loggable_verb
+
+        line = "SUPERSECRET hunter2"
+        # negative control: the old approach echoed the raw token
+        assert self._naive(line) == "SUPERSECRET"
+        assert _loggable_verb(line) == "UNKNOWN"
+
+    def test_auth_verbs_are_never_loggable(self):
+        from avicbotwikimedia import _loggable_verb
+
+        # Excluded from the table deliberately, so that even if the
+        # redaction branch in send_raw is later changed, these cannot leak.
+        for line in ("PASS hunter2", "NICKSERV IDENTIFY hunter2"):
+            assert self._naive(line) != "UNKNOWN"  # negative control
+            assert _loggable_verb(line) == "UNKNOWN"
+
+    def test_no_substring_of_the_line_survives(self):
+        from avicbotwikimedia import _LOGGABLE_IRC_VERBS, _loggable_verb
+
+        payload = "hunter2"
+        allowed = set(_LOGGABLE_IRC_VERBS.values()) | {"UNKNOWN"}
+        # negative control: a bare credential with no space leaked verbatim
+        assert self._naive(payload) == payload
+        for line in (f"PASS {payload}", f"WEIRD {payload}", payload):
+            out = _loggable_verb(line)
+            assert payload not in out
+            assert out in allowed

@@ -459,6 +459,52 @@ CONVERSATIONAL_REPLIES: dict[str, str] = {
 # =============================================================================
 
 
+# Log labels for outgoing IRC lines. Values are literals, so anything looked
+# up here is provably NOT a substring of the line being sent.
+#
+# Redacting auth commands and then logging `message.split(" ", 1)[0]` still
+# left the logged value data-dependent on the outgoing line, and CodeQL
+# reported it three times on that basis (alerts #1, #9, #12 — fixed,
+# dismissed as a false positive, then raised again once the line moved).
+# Auth verbs are deliberately absent: if the redaction branch in send_raw is
+# ever changed, a PASS/NICKSERV line still logs "UNKNOWN" rather than leaking.
+_LOGGABLE_IRC_VERBS: dict[str, str] = {
+    v: v
+    for v in (
+        "PRIVMSG",
+        "NOTICE",
+        "JOIN",
+        "PART",
+        "PING",
+        "PONG",
+        "MODE",
+        "NICK",
+        "USER",
+        "QUIT",
+        "WHO",
+        "WHOIS",
+        "WHOWAS",
+        "TOPIC",
+        "KICK",
+        "INVITE",
+        "NAMES",
+        "LIST",
+        "AWAY",
+        "CAP",
+    )
+}
+
+
+def _loggable_verb(message: str) -> str:
+    """Return a constant, log-safe label for an outgoing IRC line.
+
+    The result is always one of ``_LOGGABLE_IRC_VERBS``' literal values or
+    ``"UNKNOWN"`` — never a slice of ``message``.
+    """
+    verb = message.split(" ", 1)[0].upper()
+    return _LOGGABLE_IRC_VERBS.get(verb, "UNKNOWN")
+
+
 class IRCBot:
     """
     Asynchronous IRC Bot implementation.
@@ -566,9 +612,9 @@ class IRCBot:
         if upper.startswith("PASS") or "IDENTIFY" in upper or "NICKSERV" in upper:
             logger.debug(">>> [REDACTED AUTH COMMAND]")
         else:
-            # Log only the IRC verb to avoid leaking message content.
-            verb = message.split(" ", 1)[0]
-            logger.debug(">>> %s ...", verb)
+            # Log a literal from a constant table, never a slice of the
+            # outgoing line — see _LOGGABLE_IRC_VERBS.
+            logger.debug(">>> %s ...", _loggable_verb(message))
 
     async def send_message(self, target: str, message: str) -> None:
         """
