@@ -165,8 +165,15 @@ class TestTLSContext:
 
         from twitch import _make_tls_context
 
-        # negative control: the previous approach left the floor unpinned
-        assert ssl.create_default_context().minimum_version < ssl.TLSVersion.TLSv1_2
+        # Negative control: exhibit a context that FAILS the assertion below,
+        # so it cannot pass vacuously. Deliberately not asserting anything
+        # about create_default_context()'s own default — that varies by
+        # interpreter (3.12 reports the MINIMUM_SUPPORTED sentinel, 3.14
+        # already pins TLS 1.2), so a control built on it passes locally and
+        # fails in CI, which is exactly what happened here.
+        permissive = ssl.create_default_context()
+        permissive.minimum_version = ssl.TLSVersion.TLSv1
+        assert permissive.minimum_version < ssl.TLSVersion.TLSv1_2
 
         assert _make_tls_context().minimum_version >= ssl.TLSVersion.TLSv1_2
 
