@@ -20,39 +20,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+from dotenv_loader import load_dotenv
+
 ROOT = Path(__file__).resolve().parent
-
-
-def _load_dotenv(dotenv_path: Path) -> None:
-    """Minimal .env loader (no external deps).
-
-    Loads KEY=VALUE lines into os.environ if the key is not already set.
-    Supports:
-      - comments starting with #
-      - blank lines
-      - optional wrapping quotes: KEY="value" or KEY='value'
-    """
-    if not dotenv_path.exists() or not dotenv_path.is_file():
-        return
-
-    for raw in dotenv_path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        if "=" not in line:
-            continue
-
-        key, val = line.split("=", 1)
-        key = key.strip()
-        val = val.strip()
-        if not key:
-            continue
-
-        # Strip surrounding quotes.
-        if (len(val) >= 2) and (val[0] == val[-1]) and val[0] in ('"', "'"):
-            val = val[1:-1]
-
-        os.environ.setdefault(key, val)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -121,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
 
     # Load repo-root .env (optional) so both bots can share secrets/config.
-    _load_dotenv(ROOT / ".env")
+    load_dotenv(ROOT / ".env")
 
     if not args.twitch and not args.wikimedia:
         _build_parser().print_help(sys.stderr)
