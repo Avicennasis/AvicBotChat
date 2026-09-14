@@ -85,6 +85,11 @@ MESSAGE_DELAY: float = 2.0
 LONG_MESSAGE_DELAY: float = 5.0
 EXTRA_LONG_DELAY: float = 10.0
 
+# Twitch uses IRCv3 tags ahead of the normal IRC prefix. Match both tagged and
+# untagged PRIVMSG lines and capture only the trailing chat payload; command
+# parsing must never inspect nicknames, tags, channels, or protocol fields.
+_IRC_PRIVMSG_RE = re.compile(r"^(?:@\S+ )?:\S+ PRIVMSG \S+ :(.*)$")
+
 
 # =============================================================================
 # BOT CONFIGURATION
@@ -435,19 +440,18 @@ class TwitchBot:
         """
         channel = self.config.CHANNEL
 
-        # Parse the first whitespace-delimited token that starts with "!" and
-        # match it exactly, instead of substring-matching. The old
-        # `"!sing" in message` fired on "!singing" and every other message
-        # containing the marker (FR-476).
-        cmd = None
-        rest = ""
-        for token in message.split():
-            if token.startswith("!"):
-                cmd = token.lower()
-                rest = message.partition(token)[2].strip()
-                break
-        if cmd is None:
+        match = _IRC_PRIVMSG_RE.match(message)
+        if match is None:
             return
+
+        # Commands are accepted only as the first chat token and matched
+        # exactly. This avoids both protocol-prefix confusion (`:!sing` in a
+        # raw line) and substring false positives such as `!singing` (FR-476).
+        parts = match.group(1).split(maxsplit=1)
+        if not parts or not parts[0].startswith("!"):
+            return
+        cmd = parts[0].lower()
+        rest = parts[1].strip() if len(parts) == 2 else ""
 
         # -----------------------------------------------------------------
         # !die - Gracefully shut down the bot
