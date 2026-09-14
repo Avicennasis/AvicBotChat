@@ -48,7 +48,7 @@ python avicbot.py --Twitch --Wikimedia
 All settings are environment variables (so `.env` works great):
 
 - `AVICBOT_SERVER` (default: `irc.libera.chat`)
-- `AVICBOT_PORT` (default: `6667`)
+- `AVICBOT_PORT` (default: `6697`, TLS)
 - `AVICBOT_CHANNELS` comma-separated (default: `#avicbot`)
 - `AVICBOT_NICK` (default: `AvicBot`)
 - `AVICBOT_MASTER` (default: `Avicennasis`)

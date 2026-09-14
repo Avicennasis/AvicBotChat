@@ -552,7 +552,9 @@ class IRCBot:
         ssl_context = ssl.create_default_context()
         ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
         self.reader, self.writer = await asyncio.open_connection(
-            self.config.server, self.config.port, ssl=ssl_context,
+            self.config.server,
+            self.config.port,
+            ssl=ssl_context,
         )
 
         logger.info("Connection established, sending registration...")
