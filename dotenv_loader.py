@@ -4,6 +4,7 @@ Loads KEY=VALUE lines into os.environ if the key is not already set.
 Supports comments starting with #, blank lines, and optional wrapping quotes
 (KEY="value" or KEY='value').
 """
+
 from __future__ import annotations
 
 import os
