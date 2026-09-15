@@ -24,6 +24,7 @@ import asyncio
 import logging
 import os
 import re
+import ssl
 import sys
 from dataclasses import dataclass, field
 from typing import Optional
@@ -71,7 +72,7 @@ class BotConfig:
     All settings can be overridden via environment variables:
         - AVICBOT_NICK: Bot's IRC nickname
         - AVICBOT_SERVER: IRC server hostname
-        - AVICBOT_PORT: IRC server port (default: 6667)
+        - AVICBOT_PORT: IRC server port (default: 6697, TLS)
         - AVICBOT_CHANNELS: Comma-separated list of channels to join
         - AVICBOT_MASTER: Bot owner's nickname (receives notifications)
         - AVICBOT_USERNAME: IRC username
@@ -93,7 +94,7 @@ class BotConfig:
 
     nick: str = field(default_factory=lambda: os.getenv("AVICBOT_NICK", "AvicBot"))
     server: str = field(default_factory=lambda: os.getenv("AVICBOT_SERVER", "irc.libera.chat"))
-    port: int = field(default_factory=lambda: int(os.getenv("AVICBOT_PORT", "6667")))
+    port: int = field(default_factory=lambda: int(os.getenv("AVICBOT_PORT", "6697")))
     channels: list[str] = field(default_factory=lambda: os.getenv("AVICBOT_CHANNELS", "#avicbot").split(","))
     master: str = field(default_factory=lambda: os.getenv("AVICBOT_MASTER", "Avicennasis"))
     username: str = field(default_factory=lambda: os.getenv("AVICBOT_USERNAME", "AvicBot"))
@@ -546,7 +547,15 @@ class IRCBot:
         logger.info(f"Connecting to {self.config.server}:{self.config.port}...")
 
         # Open async TCP connection to the IRC server
-        self.reader, self.writer = await asyncio.open_connection(self.config.server, self.config.port)
+        # Libera supports TLS on 6697; without ssl= the NickServ IDENTIFY
+        # password sent below crosses the wire in plaintext (FR-478).
+        ssl_context = ssl.create_default_context()
+        ssl_context.minimum_version = ssl.TLSVersion.TLSv1_2
+        self.reader, self.writer = await asyncio.open_connection(
+            self.config.server,
+            self.config.port,
+            ssl=ssl_context,
+        )
 
         logger.info("Connection established, sending registration...")
 

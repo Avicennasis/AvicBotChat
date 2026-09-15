@@ -1,5 +1,10 @@
 """Tests for IRC message parsing and language lookups."""
 
+import asyncio
+import ssl
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
+
 import pytest
 
 from avicbotwikimedia import IRCBot, BotConfig, LANGUAGE_CODES
@@ -186,3 +191,24 @@ class TestTLSContext:
         # hardening the floor must not weaken verification
         assert ctx.verify_mode == ssl.CERT_REQUIRED
         assert ctx.check_hostname is True
+
+
+class TestWikimediaTLSConnection:
+    def test_connect_uses_libera_tls_defaults(self, monkeypatch):
+        from avicbotwikimedia import IRCBot, BotConfig
+
+        writer = SimpleNamespace(write=Mock(), drain=AsyncMock())
+        open_connection = AsyncMock(return_value=(object(), writer))
+        monkeypatch.setattr(asyncio, "open_connection", open_connection)
+        bot = IRCBot(BotConfig(server="irc.libera.chat", port=6697, password=None))
+
+        asyncio.run(bot.connect())
+
+        open_connection.assert_awaited_once()
+        args, kwargs = open_connection.await_args
+        assert args == ("irc.libera.chat", 6697)
+        context = kwargs["ssl"]
+        assert isinstance(context, ssl.SSLContext)
+        assert context.minimum_version >= ssl.TLSVersion.TLSv1_2
+        assert context.verify_mode == ssl.CERT_REQUIRED
+        assert context.check_hostname is True
