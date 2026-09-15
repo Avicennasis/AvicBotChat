@@ -85,6 +85,11 @@ MESSAGE_DELAY: float = 2.0
 LONG_MESSAGE_DELAY: float = 5.0
 EXTRA_LONG_DELAY: float = 10.0
 
+# Twitch uses IRCv3 tags ahead of the normal IRC prefix. Match both tagged and
+# untagged PRIVMSG lines and capture only the trailing chat payload; command
+# parsing must never inspect nicknames, tags, channels, or protocol fields.
+_IRC_PRIVMSG_RE = re.compile(r"^(?:@\S+ )?:\S+ PRIVMSG \S+ :(.*)$")
+
 
 # =============================================================================
 # BOT CONFIGURATION
@@ -435,52 +440,67 @@ class TwitchBot:
         """
         channel = self.config.CHANNEL
 
+        match = _IRC_PRIVMSG_RE.match(message)
+        if match is None:
+            return
+
+        # Commands are accepted only as the first chat token and matched
+        # exactly. This avoids both protocol-prefix confusion (`:!sing` in a
+        # raw line) and substring false positives such as `!singing` (FR-476).
+        parts = match.group(1).split(maxsplit=1)
+        if not parts or not parts[0].startswith("!"):
+            return
+        cmd = parts[0].lower()
+        rest = parts[1].strip() if len(parts) == 2 else ""
+
         # -----------------------------------------------------------------
         # !die - Gracefully shut down the bot
         # -----------------------------------------------------------------
-        if f"!die {self.config.NICK}" in message:
-            self.send_message(channel, "Do you wanna build a snowman?")
-            time.sleep(MESSAGE_DELAY)
-            self.send_message(channel, "It doesn't have to be a snowman.")
-            time.sleep(MESSAGE_DELAY)
-            self.send_message(channel, "Ok, Bye :(")
-            self.send_message(self.config.MASTER, "I have to leave now :(")
-            logger.info("Bot shutting down via !die command")
-            self.running = False
+        if cmd == "!die":
+            if rest == self.config.NICK:
+                self.send_message(channel, "Do you wanna build a snowman?")
+                time.sleep(MESSAGE_DELAY)
+                self.send_message(channel, "It doesn't have to be a snowman.")
+                time.sleep(MESSAGE_DELAY)
+                self.send_message(channel, "Ok, Bye :(")
+                self.send_message(self.config.MASTER, "I have to leave now :(")
+                logger.info("Bot shutting down via !die command")
+                self.running = False
             return
 
         # -----------------------------------------------------------------
         # !say - Echo a message back to chat
         # -----------------------------------------------------------------
-        if "!say " in message:
-            parts = message.split("!say ", 1)
-            if len(parts) > 1:
-                text = parts[1]
-                self.send_message(channel, text)
-                self.send_message(self.config.MASTER, f"Message sent: {text}")
-                logger.info(f"Sent say command: {text}")
+        if cmd == "!say":
+            if rest:
+                self.send_message(channel, rest)
+                self.send_message(self.config.MASTER, f"Message sent: {rest}")
+                logger.info(f"Sent say command: {rest}")
+            return
 
         # -----------------------------------------------------------------
         # !sing - Sing "Daisy Bell" (HAL 9000 reference)
         # -----------------------------------------------------------------
-        if "!sing" in message:
+        if cmd == "!sing":
             self.send_message(channel, "Daisy, Daisy, Give me your answer, do.")
             time.sleep(MESSAGE_DELAY)
             self.send_message(channel, "I'm half crazy all for the love of you.")
             logger.info("Sent sing command")
+            return
 
         # -----------------------------------------------------------------
         # !random - Return a "random" number (d20 joke)
         # Chosen by fair dice roll. Guaranteed to be random.
         # -----------------------------------------------------------------
-        if "!random" in message:
+        if cmd == "!random":
             self.send_message(channel, "7.")
             logger.info("Sent random number")
+            return
 
         # -----------------------------------------------------------------
         # !commands - List all available commands
         # -----------------------------------------------------------------
-        if "!commands" in message:
+        if cmd == "!commands":
             self.send_message(channel, "Commands:")
             time.sleep(MESSAGE_DELAY)
             self.send_message(channel, "!say: I echo back whatever you say.")
@@ -491,36 +511,34 @@ class TwitchBot:
             time.sleep(MESSAGE_DELAY)
             self.send_message(channel, "!die: Makes me leave :(")
             logger.info("Sent command list")
+            return
 
         # -----------------------------------------------------------------
         # !xkcd - Link to an XKCD comic
         # -----------------------------------------------------------------
-        if "!xkcd " in message:
-            parts = message.split("!xkcd ", 1)
-            if len(parts) > 1:
-                comic_num = parts[1].strip()
-                self.send_message(channel, f"http://xkcd.com/{comic_num}")
-                logger.info(f"Sent XKCD link: {comic_num}")
+        if cmd == "!xkcd":
+            if rest:
+                self.send_message(channel, f"http://xkcd.com/{rest}")
+                logger.info(f"Sent XKCD link: {rest}")
+            return
 
         # -----------------------------------------------------------------
         # !youtube - Link to a YouTube video
         # -----------------------------------------------------------------
-        if "!youtube " in message:
-            parts = message.split("!youtube ", 1)
-            if len(parts) > 1:
-                video_id = parts[1].strip()
-                self.send_message(channel, f"https://www.youtube.com/watch?v={video_id}")
-                logger.info(f"Sent YouTube link: {video_id}")
+        if cmd == "!youtube":
+            if rest:
+                self.send_message(channel, f"https://www.youtube.com/watch?v={rest}")
+                logger.info(f"Sent YouTube link: {rest}")
+            return
 
         # -----------------------------------------------------------------
         # !beer - Give a virtual beer to someone
         # -----------------------------------------------------------------
-        if "!beer " in message:
-            parts = message.split("!beer ", 1)
-            if len(parts) > 1:
-                recipient = parts[1].strip()
-                self.send_message(channel, f"*Gives a beer to {recipient}!* Drink up!")
-                logger.info(f"Sent beer to: {recipient}")
+        if cmd == "!beer":
+            if rest:
+                self.send_message(channel, f"*Gives a beer to {rest}!* Drink up!")
+                logger.info(f"Sent beer to: {rest}")
+            return
 
     @staticmethod
     def _word_in(word: str, text: str) -> bool:
