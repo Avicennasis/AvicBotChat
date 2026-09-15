@@ -44,5 +44,5 @@ jobs:
         with:
           python-version: "3.14"
 
-      - run: pip install pytest python-dotenv
+      - run: pip install pytest
       - run: pytest tests/ -v

@@ -9,7 +9,7 @@ improvements are all welcome.
 git clone https://github.com/Avicennasis/AvicBotChat.git
 cd AvicBotChat
 python3 -m venv .venv && . .venv/bin/activate
-pip install ruff pytest
+pip install pre-commit pytest ruff==0.15.22
 pre-commit install
 ```
 
