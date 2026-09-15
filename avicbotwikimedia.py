@@ -29,6 +29,8 @@ from dataclasses import dataclass, field
 from typing import Optional
 from pathlib import Path
 
+from dotenv_loader import load_dotenv
+
 
 # -----------------------------------------------------------------------------
 # .env LOADING (no external deps)
@@ -37,34 +39,7 @@ from pathlib import Path
 # Environment variables always win over .env entries.
 
 
-def _load_dotenv(dotenv_path: Path) -> None:
-    """Minimal .env loader.
-
-    Supports KEY=VALUE lines, optional quotes, comments starting with #.
-    """
-    if not dotenv_path.exists() or not dotenv_path.is_file():
-        return
-
-    for raw in dotenv_path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-        if not line or line.startswith("#"):
-            continue
-        if "=" not in line:
-            continue
-
-        key, val = line.split("=", 1)
-        key = key.strip()
-        val = val.strip()
-        if not key:
-            continue
-
-        if (len(val) >= 2) and (val[0] == val[-1]) and val[0] in ('"', "'"):
-            val = val[1:-1]
-
-        os.environ.setdefault(key, val)
-
-
-_load_dotenv(Path(__file__).resolve().parent / ".env")
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
 # =============================================================================
