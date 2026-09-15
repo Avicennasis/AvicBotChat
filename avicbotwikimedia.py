@@ -741,7 +741,7 @@ class IRCBot:
 
         # ====== !link - Custom link builder ======
         elif command == "!link" and args:
-            url = f"http://avicbot.org/{args}"
+            url = f"https://avicbot.com/{args}"
             await self.send_message(reply_target, url)
             await self.send_message(self.config.master, url)
 
