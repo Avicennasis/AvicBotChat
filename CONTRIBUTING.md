@@ -9,7 +9,7 @@ improvements are all welcome.
 git clone https://github.com/Avicennasis/AvicBotChat.git
 cd AvicBotChat
 python3 -m venv .venv && . .venv/bin/activate
-pip install ruff pytest python-dotenv
+pip install pre-commit pytest ruff==0.15.22
 pre-commit install
 ```
 
@@ -24,7 +24,7 @@ pytest tests/ -v
 ```
 
 CI runs the same `pytest tests/ -v` plus `ruff check .` and
-`ruff format --check .` against Python 3.12. Make sure both are clean
+`ruff format --check .` against Python 3.14. Make sure both are clean
 locally before opening a PR.
 
 ## Code style
